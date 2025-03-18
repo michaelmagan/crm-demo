@@ -1,15 +1,8 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useMessageStore } from "@/store/message-store";
-import { Loader2, XIcon } from "lucide-react";
-import { useState } from 'react';
-
-interface AddMessageFormProps {
-  onClose?: () => void;
-}
+import { useState } from "react";
+import { FormWrapper, FormField } from "@/components/ui/form-wrapper";
 
 interface AddMessageFormProps {
   onClose?: () => void;
@@ -18,22 +11,24 @@ interface AddMessageFormProps {
   initialContent?: string;
 }
 
-export default function AddMessageForm({ 
-  initialEmail = '', 
-  initialSubject = '', 
-  initialContent = '', 
-  onClose, 
+export default function AddMessageForm({
+  initialEmail = "",
+  initialSubject = "",
+  initialContent = "",
+  onClose,
 }: AddMessageFormProps) {
   const [email, setEmail] = useState(initialEmail);
   const [subject, setSubject] = useState(initialSubject);
   const [content, setContent] = useState(initialContent);
-  const [submitState, setSubmitState] = useState<'idle' | 'loading' | 'success'>('idle');
+  const [submitState, setSubmitState] = useState<
+    "idle" | "loading" | "success"
+  >("idle");
 
   const { addNewMessage } = useMessageStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitState('loading');
+    setSubmitState("loading");
 
     await addNewMessage({
       email,
@@ -42,74 +37,56 @@ export default function AddMessageForm({
       timestamp: new Date().toISOString(),
     });
 
-    setSubmitState('success');
+    setSubmitState("success");
     setTimeout(() => {
-      setSubmitState('idle');
+      setSubmitState("idle");
       onClose?.();
     }, 500);
   };
 
   return (
-    <Card className="w-full relative">
-      <button
-        onClick={onClose}
-        className="absolute top-6 right-2 p-1 rounded-full hover:bg-gray-200 transition-colors"
-      >
-        <XIcon className="w-5 h-5" />
-      </button>
-      <CardHeader>
-        <CardTitle className="text-lg font-semibold">New Message</CardTitle>
-      </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
-          <div className="space-y-1">
-            <Label htmlFor="email">To</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="recipient@example.com"
-              required
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="subject">Subject</Label>
-            <Input
-              id="subject"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder="Message subject"
-              required
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="content">Message</Label>
-            <Textarea
-              id="content"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Type your message here..."
-              rows={5}
-              required
-            />
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button 
-            type="submit" 
-            className={`w-full transition-all duration-300 ease-in-out ${
-              submitState === 'loading' ? 'w-12 p-0' : 
-              submitState === 'success' ? 'w-24 bg-green-500 hover:bg-green-600' : ''
-            }`}
-            disabled={submitState !== 'idle'}
-          >
-            {submitState === 'idle' && 'Save Draft'}
-            {submitState === 'loading' && <Loader2 className="h-5 w-5 animate-spin" />}
-            {submitState === 'success' && 'Saved!'}
-          </Button>
-        </CardFooter>
-      </form>
-    </Card>
+    <FormWrapper
+      title="New Message"
+      onClose={onClose}
+      onSubmit={handleSubmit}
+      submitLabel="Save Draft"
+      submitState={submitState}
+      successLabel="Saved!"
+      width="500px"
+    >
+      <FormField label="To" htmlFor="email">
+        <Input
+          id="email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="recipient@example.com"
+          className="h-10 rounded-md"
+          required
+        />
+      </FormField>
+
+      <FormField label="Subject" htmlFor="subject">
+        <Input
+          id="subject"
+          value={subject}
+          onChange={(e) => setSubject(e.target.value)}
+          placeholder="Message subject"
+          className="h-10 rounded-md"
+          required
+        />
+      </FormField>
+
+      <FormField label="Message" htmlFor="content">
+        <Textarea
+          id="content"
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder="Type your message here..."
+          className="min-h-[120px] rounded-md resize-none"
+          required
+        />
+      </FormField>
+    </FormWrapper>
   );
-} 
+}
