@@ -7,7 +7,7 @@ import type { VariantProps } from "class-variance-authority";
 import { cva } from "class-variance-authority";
 import * as React from "react";
 
-const chatThreadVariants = cva("flex flex-col gap-4", {
+const threadContentVariants = cva("flex flex-col gap-4", {
   variants: {
     variant: {
       default: "",
@@ -24,16 +24,17 @@ const chatThreadVariants = cva("flex flex-col gap-4", {
 });
 
 /**
- * Represents a chat thread component
+ * Represents a thread content component
  * @property {string} className - Optional className for custom styling
- * @property {VariantProps<typeof chatThreadVariants>["variant"]} variant - Optional variant for custom styling
+ * @property {VariantProps<typeof threadContentVariants>["variant"]} variant - Optional variant for custom styling
  */
 
-export interface ChatThreadProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: VariantProps<typeof chatThreadVariants>["variant"];
+export interface ThreadContentProps
+  extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: VariantProps<typeof threadContentVariants>["variant"];
 }
 
-const ChatThread = React.forwardRef<HTMLDivElement, ChatThreadProps>(
+const ThreadContent = React.forwardRef<HTMLDivElement, ThreadContentProps>(
   ({ className, variant, ...props }, ref) => {
     const { thread } = useTambo();
     const messages = thread?.messages ?? [];
@@ -41,18 +42,20 @@ const ChatThread = React.forwardRef<HTMLDivElement, ChatThreadProps>(
     return (
       <div
         ref={ref}
-        className={cn(chatThreadVariants({ variant }), className)}
+        className={cn(threadContentVariants({ variant }), className)}
         {...props}
       >
         {messages.map((message) => (
           <div
             key={
               message.id ??
-              `${message.role}-${message.createdAt ?? Date.now()}-${message.content?.toString().substring(0, 10)}`
+              `${message.role}-${
+                message.createdAt ?? Date.now()
+              }-${message.content?.toString().substring(0, 10)}`
             }
             className={cn(
               "animate-in fade-in-0 slide-in-from-bottom-2",
-              "duration-200 ease-in-out",
+              "duration-200 ease-in-out"
             )}
             style={{ animationDelay: `${messages.indexOf(message) * 40}ms` }}
           >
@@ -60,7 +63,7 @@ const ChatThread = React.forwardRef<HTMLDivElement, ChatThreadProps>(
               className={cn(
                 "flex flex-col gap-1.5",
                 message.role === "user" ? "ml-12" : "mr-12",
-                "max-w-[85%]",
+                "max-w-[85%]"
               )}
             >
               <Message
@@ -71,10 +74,10 @@ const ChatThread = React.forwardRef<HTMLDivElement, ChatThreadProps>(
                 }
                 content={
                   Array.isArray(message.content)
-                    ? (message.content[0]?.text ?? "Empty message")
+                    ? message.content[0]?.text ?? "Empty message"
                     : typeof message.content === "string"
-                      ? message.content
-                      : "Empty message"
+                    ? message.content
+                    : "Empty message"
                 }
                 variant={variant}
               />
@@ -83,8 +86,8 @@ const ChatThread = React.forwardRef<HTMLDivElement, ChatThreadProps>(
         ))}
       </div>
     );
-  },
+  }
 );
-ChatThread.displayName = "ChatThread";
+ThreadContent.displayName = "ThreadContent";
 
-export { ChatThread, chatThreadVariants };
+export { ThreadContent, threadContentVariants };
