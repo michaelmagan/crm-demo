@@ -1,10 +1,3 @@
-# Hydra AI Components and Tools
-
-## Libraries & Dependencies
-
-- `HydraClient` from "hydra-ai"
-- `ComponentContextTool` from "hydra-ai/dist/hydra-ai/model/component-metadata"
-
 ## Components
 
 ### Lead Management
