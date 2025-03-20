@@ -3,8 +3,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { useTamboSuggestions } from "@tambo-ai/react";
-import { LightbulbIcon, CheckIcon } from "lucide-react";
-import { Button } from "./button";
 
 export interface MessageSuggestionsProps
   extends React.HTMLAttributes<HTMLDivElement> {
@@ -63,50 +61,34 @@ export function MessageSuggestions({
 
   const modKey = isMac ? "⌘" : "Ctrl";
   const altKey = isMac ? "⌥" : "Alt";
+  const keyCombo = `${modKey}+${altKey}+`;
 
   return (
-    <div className={cn("px-4 py-2 border-t", className)} {...props}>
-      <div className="flex items-center gap-2 mb-2">
-        <LightbulbIcon className="h-4 w-4 text-amber-500" />
-        <span className="text-sm font-medium">Suggestions</span>
-      </div>
-      <div className="space-y-2">
-        {suggestions.map((suggestion, index) => (
-          <div
-            key={suggestion.id}
-            className={cn(
-              "p-2 rounded-md text-sm cursor-pointer transition-colors",
-              "hover:bg-muted/70",
-              selectedSuggestionId === suggestion.id
-                ? "bg-muted border-l-2 border-primary"
-                : "bg-muted/30"
-            )}
-            onClick={() => accept({ suggestion })}
-          >
-            <div className="flex justify-between items-center mb-1">
-              <div className="flex items-center gap-2">
-                <span className="font-medium">{suggestion.title}</span>
-                <kbd className="px-1.5 py-0.5 text-[10px] font-mono rounded border border-muted-foreground/30 bg-muted/50">
-                  {modKey}+{altKey}+{index + 1}
-                </kbd>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-5 w-5"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  accept({ suggestion, shouldSubmit: true });
-                }}
-              >
-                <CheckIcon className="h-3 w-3" />
-              </Button>
+    <div className={cn("px-3 py-1 border-t", className)} {...props}>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-row gap-2 overflow-x-auto">
+          {suggestions.map((suggestion, index) => (
+            <div
+              key={suggestion.id}
+              className={cn(
+                "px-2 py-1 rounded-md text-xs cursor-pointer transition-colors flex items-center gap-1.5",
+                "hover:bg-muted/70 whitespace-nowrap",
+                selectedSuggestionId === suggestion.id
+                  ? "bg-muted border-l-2 border-primary"
+                  : "bg-muted/30"
+              )}
+              onClick={() => accept({ suggestion, shouldSubmit: true })}
+            >
+              <span>{suggestion.title}</span>
+              <span className="inline-flex items-center justify-center h-5 w-5 rounded bg-primary/20 font-medium">
+                {index + 1}
+              </span>
             </div>
-            <p className="text-muted-foreground line-clamp-2">
-              {suggestion.detailedSuggestion}
-            </p>
-          </div>
-        ))}
+          ))}
+        </div>
+        <div className="text-xs text-muted-foreground whitespace-nowrap px-1 py-0.5 rounded border bg-muted/30">
+          {keyCombo}#
+        </div>
       </div>
     </div>
   );

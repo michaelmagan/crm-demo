@@ -62,6 +62,7 @@ const ThreadContent = React.forwardRef<HTMLDivElement, ThreadContentProps>(
             <div
               className={cn(
                 "flex flex-col gap-1.5",
+                message.role === "user" ? "items-end" : "items-start",
                 message.role === "user" ? "ml-12" : "mr-12",
                 "max-w-[85%]"
               )}

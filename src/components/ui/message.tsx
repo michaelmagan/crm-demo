@@ -45,7 +45,7 @@ const bubbleVariants = cva(
     defaultVariants: {
       role: "user",
     },
-  },
+  }
 );
 
 export interface MessageProps {
@@ -60,10 +60,15 @@ const Message = React.forwardRef<HTMLDivElement, MessageProps>(
     return (
       <div
         ref={ref}
-        className={cn(messageVariants({ variant, align: role }), className)}
+        className={cn(
+          messageVariants({ variant, align: role }),
+          className,
+          "message"
+        )}
+        data-role={role}
         {...props}
       >
-        <div className={cn(bubbleVariants({ role }))}>
+        <div className={cn(bubbleVariants({ role }), "message-bubble")}>
           <p className="break-words whitespace-pre-wrap">
             {!content ? (
               <span className="text-muted-foreground italic">
@@ -82,7 +87,7 @@ const Message = React.forwardRef<HTMLDivElement, MessageProps>(
         </div>
       </div>
     );
-  },
+  }
 );
 Message.displayName = "Message";
 

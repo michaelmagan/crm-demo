@@ -27,6 +27,16 @@ Also update all imports and references to these components throughout the codeba
 - Streamlined UI with cleaner button layout
 - Collapsed state is more compact, taking less screen space
 - Responsive design with adaptive width based on screen size
+- Enhanced width variants (sm, md, lg, xl, 2xl, 3xl) for granular control over component width
+- Mobile responsiveness with automatic expansion to 95% screen width on small devices
+- Returns to the selected width variant on larger screens (sm breakpoint and above)
+- Added height variants (sm, md, lg, xl, 2xl) for adjusting the vertical space of the component
+- Improved message styling with dark background for user messages and light background for AI messages
+- AI messages use light backgrounds (with dark text) while user messages use accent-colored backgrounds
+- Added defaultMessage prop to customize placeholder text in the input field
+- Optimized style management for message appearance with scoped CSS and data attributes
+- Messages are properly styled regardless of theme (light/dark mode)
+- Consistent styling in all variants and sizes
 
 ## Message Input
 
@@ -52,19 +62,18 @@ Also update all imports and references to these components throughout the codeba
 - Uses the `useTamboThreads` hook to fetch and display thread data
 - Adapts to user's platform to show appropriate keyboard shortcuts
 
-## Message Suggestions
+### Message Suggestions
 
-`ui/message-suggestions.tsx` (renamed from `chat-suggestions.tsx`)
+`ui/message-suggestions.tsx`
 
-- Displays AI-generated suggestions below the thread content
-- Shows a lightbulb icon and "Suggestions" header
-- Each suggestion shows a title and preview of the content
-- Clicking a suggestion adds it to the message input field
-- Provides a checkmark button to immediately submit the suggestion
-- Supports keyboard shortcuts to quickly select suggestions:
-  - **⌘+⌥+[1-9]** (Mac) or **Ctrl+Alt+[1-9]** (Windows/Linux) to select suggestions by number
-  - Shortcuts are visibly displayed next to each suggestion
-  - Automatically detects user's platform to show appropriate shortcut notation
-- Highlights the currently selected suggestion
-- Only appears when suggestions are available
-- Leverages the `useTamboSuggestions` hook to retrieve suggestions
+- Displays suggestions in a compact single-row horizontal layout
+- Each suggestion shows just the title followed by a numbered button
+- Removes lightbulb icon and header for a cleaner interface
+- Key combination indicator displayed on the right side showing "{Mod}+{Alt}+#"
+- Clicking a suggestion immediately submits it
+- Maintains keyboard shortcuts functionality:
+  - **⌘+⌥+[1-9]** (Mac) or **Ctrl+Alt+[1-9]** (Windows/Linux)
+- Uses whitespace-nowrap with overflow scrolling for many suggestions
+- Automatically adapts shortcut notation based on user's platform
+- Minimalist design takes up significantly less vertical space
+- Styled number buttons with rounded background for better visibility
