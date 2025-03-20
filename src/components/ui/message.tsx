@@ -53,10 +53,25 @@ export interface MessageProps {
   content: string | { type: string; text?: string }[];
   variant?: VariantProps<typeof messageVariants>["variant"];
   className?: string;
+  renderedComponent?: React.ReactNode;
 }
 
 const Message = React.forwardRef<HTMLDivElement, MessageProps>(
-  ({ className, role, content, variant, ...props }, ref) => {
+  ({ className, role, content, variant, renderedComponent, ...props }, ref) => {
+    const renderContent = () => {
+      if (!content) {
+        return (
+          <span className="text-muted-foreground italic">Empty message</span>
+        );
+      } else if (typeof content === "string") {
+        return sanitizeHtml(content);
+      } else {
+        return content.map((item, index) => (
+          <span key={index}>{item.text ? sanitizeHtml(item.text) : ""}</span>
+        ));
+      }
+    };
+
     return (
       <div
         ref={ref}
@@ -68,22 +83,13 @@ const Message = React.forwardRef<HTMLDivElement, MessageProps>(
         data-role={role}
         {...props}
       >
-        <div className={cn(bubbleVariants({ role }), "message-bubble")}>
-          <p className="break-words whitespace-pre-wrap">
-            {!content ? (
-              <span className="text-muted-foreground italic">
-                Empty message
-              </span>
-            ) : typeof content === "string" ? (
-              sanitizeHtml(content)
-            ) : (
-              content.map((item, index) => (
-                <span key={index}>
-                  {item.text ? sanitizeHtml(item.text) : ""}
-                </span>
-              ))
-            )}
-          </p>
+        <div className="flex flex-col">
+          <div className={cn(bubbleVariants({ role }), "message-bubble")}>
+            <p className="break-words whitespace-pre-wrap">{renderContent()}</p>
+          </div>
+          {role === "assistant" && renderedComponent && (
+            <div className="mt-2">{renderedComponent}</div>
+          )}
         </div>
       </div>
     );

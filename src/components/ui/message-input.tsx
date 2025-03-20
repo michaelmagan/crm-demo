@@ -69,8 +69,8 @@ const MessageInput = React.forwardRef<
       if (!value.trim()) return;
 
       try {
-        // Submit the message with the value still in the input
-        await submit();
+        // Submit the message with streaming enabled
+        await submit({ streamResponse: true });
         // Only clear after successful submission
         setValue("");
       } catch (error) {
@@ -78,16 +78,28 @@ const MessageInput = React.forwardRef<
       }
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-        e.preventDefault();
-        if (value.trim()) {
-          handleSubmit(e as unknown as React.FormEvent);
+    React.useEffect(() => {
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+          e.preventDefault();
+          if (!value.trim()) return;
+          submit({ streamResponse: true });
         }
-      }
-    };
+      };
+
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [value, submit]);
 
     const modKey = isMac ? "⌘" : "Ctrl";
+
+    if (contextKey === undefined || contextKey === "") {
+      return (
+        <p className="text-destructive">
+          No context key provided, cannot send messages
+        </p>
+      );
+    }
 
     return (
       <form
@@ -101,7 +113,6 @@ const MessageInput = React.forwardRef<
             type="text"
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            onKeyDown={handleKeyDown}
             className="flex-1 p-2 rounded-lg border bg-background text-foreground border-border"
             disabled={isPending}
             placeholder={placeholder}

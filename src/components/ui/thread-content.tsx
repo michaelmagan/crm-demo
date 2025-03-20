@@ -1,8 +1,7 @@
 "use client";
 
-import { Message } from "@/components/ui/message";
 import { cn } from "@/lib/utils";
-import { useTambo } from "@tambo-ai/react";
+import { TamboThreadMessage, useTambo } from "@tambo-ai/react";
 import type { VariantProps } from "class-variance-authority";
 import { cva } from "class-variance-authority";
 import * as React from "react";
@@ -39,6 +38,27 @@ const ThreadContent = React.forwardRef<HTMLDivElement, ThreadContentProps>(
     const { thread } = useTambo();
     const messages = thread?.messages ?? [];
 
+    const renderMessageContent = (message: TamboThreadMessage) => {
+      if (typeof message.content === "string") {
+        return message.content;
+      } else if (Array.isArray(message.content)) {
+        // Handle array of content parts by extracting text content
+        return message.content
+          .map((part) => {
+            if (typeof part === "string") return part;
+            if (part && typeof part === "object" && "text" in part)
+              return part.text;
+            return "";
+          })
+          .join("");
+      }
+      return "";
+    };
+
+    const isAssistantOrHydra = (role: string) => {
+      return role === "assistant" || role === "hydra";
+    };
+
     return (
       <div
         ref={ref}
@@ -64,24 +84,27 @@ const ThreadContent = React.forwardRef<HTMLDivElement, ThreadContentProps>(
                 "flex flex-col gap-1.5",
                 message.role === "user" ? "items-end" : "items-start",
                 message.role === "user" ? "ml-12" : "mr-12",
-                "max-w-[85%]"
+                isAssistantOrHydra(message.role) && message.renderedComponent
+                  ? "w-full max-w-full"
+                  : "max-w-[85%]"
               )}
             >
-              <Message
-                role={
-                  message.role === "user" || message.role === "assistant"
-                    ? message.role
-                    : "user"
-                }
-                content={
-                  Array.isArray(message.content)
-                    ? message.content[0]?.text ?? "Empty message"
-                    : typeof message.content === "string"
-                    ? message.content
-                    : "Empty message"
-                }
-                variant={variant}
-              />
+              <div
+                className={cn(
+                  "relative inline-block rounded-lg px-3 py-2 text-[15px] leading-relaxed transition-all duration-200 font-medium max-w-full",
+                  message.role === "user"
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "bg-muted text-foreground hover:bg-muted/90"
+                )}
+              >
+                <p className="break-words whitespace-pre-wrap">
+                  {renderMessageContent(message)}
+                </p>
+              </div>
+              {isAssistantOrHydra(message.role) &&
+                message.renderedComponent && (
+                  <div className="mt-2 w-full">{message.renderedComponent}</div>
+                )}
             </div>
           </div>
         ))}

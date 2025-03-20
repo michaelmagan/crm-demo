@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { useTamboThreads, type TamboThread } from "@tambo-ai/react";
+import { useTamboThreads } from "@tambo-ai/react";
 import { useTamboThread } from "@tambo-ai/react";
 import { Button } from "./button";
 import { PlusIcon } from "lucide-react";
@@ -83,9 +83,9 @@ export function ThreadHistory({
   };
 
   // Extract thread data safely
-  const threadItems = React.useMemo<TamboThread[]>(() => {
+  const threadItems = React.useMemo(() => {
     if (!threads) return [];
-    return Array.isArray(threads) ? threads : [];
+    return "items" in threads ? threads.items : [];
   }, [threads]);
 
   return (
@@ -148,7 +148,7 @@ export function ThreadHistory({
                 No previous threads
               </DropdownMenu.Item>
             ) : (
-              threadItems.map((thread: TamboThread) => (
+              threadItems.map((thread) => (
                 <DropdownMenu.Item
                   key={thread.id}
                   className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
