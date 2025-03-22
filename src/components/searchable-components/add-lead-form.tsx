@@ -7,45 +7,81 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Lead, LeadStatus } from "@/services/leads-service";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useLeadStore } from "../../store/lead-store";
 import { FormWrapper, FormField } from "@/components/ui/form-wrapper";
+import {
+  useTamboComponentState,
+  useTamboStreamingProps,
+} from "@tambo-ai/react";
+import { z } from "zod";
 
-interface AddLeadFormProps {
+// 1. Define schema for Tambo registration
+export const LeadFormSchema = z.object({
+  name: z.string().optional().default(""),
+  email: z.string().email().optional().default(""),
+  company: z.string().optional().default(""),
+  phone: z.string().optional().default(""),
+  status: z
+    .enum(["New", "Contacted", "Qualified", "Closed"])
+    .optional()
+    .default("New"),
+});
+
+// 2. Define component props derived from schema
+export type LeadFormData = z.infer<typeof LeadFormSchema>;
+export type AddLeadFormProps = {
   lead?: Lead;
   onClose?: () => void;
+};
+
+interface FormState {
+  name: string;
+  email: string;
+  company: string;
+  phone: string;
+  status: LeadStatus;
 }
 
 export default function AddLeadForm({ lead, onClose }: AddLeadFormProps) {
-  const [name, setName] = useState(lead?.name || "");
-  const [email, setEmail] = useState(lead?.email || "");
-  const [company, setCompany] = useState(lead?.company || "");
-  const [phone, setPhone] = useState(lead?.phone || "");
-  const [status, setStatus] = useState<LeadStatus>(lead?.status || "New");
+  const [formState, setFormState] = useTamboComponentState<FormState>(
+    "addLeadForm",
+    {
+      name: "",
+      email: "",
+      company: "",
+      phone: "",
+      status: "New" as LeadStatus,
+    }
+  );
+
   const [submitState, setSubmitState] = useState<
     "idle" | "loading" | "success"
   >("idle");
 
-  useEffect(() => {
-    setName(lead?.name || "");
-    setEmail(lead?.email || "");
-    setCompany(lead?.company || "");
-    setPhone(lead?.phone || "");
-    setStatus(lead?.status || "New");
-  }, [lead]);
+  // 3. Connect streaming lead prop to form state
+  useTamboStreamingProps(formState, setFormState, {
+    name: lead?.name || "",
+    email: lead?.email || "",
+    company: lead?.company || "",
+    phone: lead?.phone || "",
+    status: lead?.status || "New",
+  });
 
   const { addNewLead } = useLeadStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formState) return;
+
     setSubmitState("loading");
 
     await addNewLead({
-      name,
-      email,
-      company,
-      phone,
-      status,
+      name: formState.name,
+      email: formState.email,
+      company: formState.company,
+      phone: formState.phone,
+      status: formState.status,
       notes: [],
       meetings: [],
     });
@@ -54,11 +90,15 @@ export default function AddLeadForm({ lead, onClose }: AddLeadFormProps) {
 
     setTimeout(() => {
       setSubmitState("idle");
-      setName("");
-      setEmail("");
-      setCompany("");
-      setPhone("");
-      setStatus("New");
+      if (formState) {
+        setFormState({
+          name: "",
+          email: "",
+          company: "",
+          phone: "",
+          status: "New",
+        });
+      }
       onClose?.();
     }, 500);
   };
@@ -78,6 +118,8 @@ export default function AddLeadForm({ lead, onClose }: AddLeadFormProps) {
     }
   };
 
+  if (!formState) return null;
+
   return (
     <FormWrapper
       title="Add a lead"
@@ -90,9 +132,14 @@ export default function AddLeadForm({ lead, onClose }: AddLeadFormProps) {
       <FormField label="Name" htmlFor="name">
         <Input
           id="name"
-          value={name}
+          value={formState.name}
           placeholder="Lead Name"
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) =>
+            setFormState({
+              ...formState,
+              name: e.target.value,
+            })
+          }
           className="h-10 rounded-md"
           required
         />
@@ -102,9 +149,14 @@ export default function AddLeadForm({ lead, onClose }: AddLeadFormProps) {
         <Input
           type="email"
           id="email"
-          value={email}
+          value={formState.email}
           placeholder="Lead Email"
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) =>
+            setFormState({
+              ...formState,
+              email: e.target.value,
+            })
+          }
           className="h-10 rounded-md"
           required
         />
@@ -113,9 +165,14 @@ export default function AddLeadForm({ lead, onClose }: AddLeadFormProps) {
       <FormField label="Company" htmlFor="company">
         <Input
           id="company"
-          value={company}
+          value={formState.company}
           placeholder="Lead Company"
-          onChange={(e) => setCompany(e.target.value)}
+          onChange={(e) =>
+            setFormState({
+              ...formState,
+              company: e.target.value,
+            })
+          }
           className="h-10 rounded-md"
         />
       </FormField>
@@ -124,29 +181,39 @@ export default function AddLeadForm({ lead, onClose }: AddLeadFormProps) {
         <Input
           type="tel"
           id="phone"
-          value={phone}
+          value={formState.phone}
           placeholder="Lead Phone"
-          onChange={(e) => setPhone(e.target.value)}
+          onChange={(e) =>
+            setFormState({
+              ...formState,
+              phone: e.target.value,
+            })
+          }
           className="h-10 rounded-md"
         />
       </FormField>
 
       <FormField label="Status" htmlFor="status">
         <Select
-          value={status}
-          onValueChange={(value) => setStatus(value as LeadStatus)}
+          value={formState.status}
+          onValueChange={(value) =>
+            setFormState({
+              ...formState,
+              status: value as LeadStatus,
+            })
+          }
         >
           <SelectTrigger className="h-10 rounded-md">
             <SelectValue placeholder="Select a status">
               <span
                 style={{
-                  backgroundColor: getStatusColor(status),
+                  backgroundColor: getStatusColor(formState.status),
                   padding: "2px 8px",
                   borderRadius: "4px",
                   display: "inline-block",
                 }}
               >
-                {status}
+                {formState.status}
               </span>
             </SelectValue>
           </SelectTrigger>

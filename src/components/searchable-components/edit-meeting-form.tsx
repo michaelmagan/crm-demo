@@ -2,44 +2,81 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Meeting } from "@/services/leads-service";
 import { useLeadStore } from "@/store/lead-store";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { FormWrapper, FormField } from "@/components/ui/form-wrapper";
+import {
+  useTamboComponentState,
+  useTamboStreamingProps,
+} from "@tambo-ai/react";
+import { z } from "zod";
 
-interface EditMeetingFormProps {
+// 1. Define schema for Tambo registration
+export const EditMeetingSchema = z.object({
+  meetingId: z.number(),
+  leadId: z.number(),
+  date: z.string(),
+  time: z.string(),
+  description: z.string(),
+});
+
+// 2. Define component props derived from schema
+export type EditMeetingProps = {
   meeting: Meeting;
   leadId: number;
   onClose?: () => void;
+};
+
+interface FormState {
+  date: string;
+  time: string;
+  description: string;
 }
 
 export default function EditMeetingForm({
   meeting,
   leadId,
   onClose,
-}: EditMeetingFormProps) {
-  const [date, setDate] = useState(meeting.date);
-  const [time, setTime] = useState(meeting.time);
-  const [description, setDescription] = useState(meeting.description);
+}: EditMeetingProps) {
+  const [formState, setFormState] = useTamboComponentState<FormState>(
+    "editMeetingForm",
+    {
+      date: "",
+      time: "",
+      description: "",
+    }
+  );
+
   const [submitState, setSubmitState] = useState<
     "idle" | "loading" | "success"
   >("idle");
 
-  useEffect(() => {
-    setDate(meeting.date);
-    setTime(meeting.time);
-    setDescription(meeting.description);
-  }, [meeting]);
+  // 3. Connect streaming props to form state
+  useTamboStreamingProps(formState, setFormState, {
+    date: meeting.date,
+    time: meeting.time,
+    description: meeting.description,
+  });
 
   const { updateExistingLead, leads } = useLeadStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formState) return;
+
     setSubmitState("loading");
 
     const lead = leads.find((l) => l.id === leadId);
     if (!lead) return;
 
     const updatedMeetings = lead.meetings.map((m) =>
-      m.id === meeting.id ? { ...m, date, time, description } : m
+      m.id === meeting.id
+        ? {
+            ...m,
+            date: formState.date,
+            time: formState.time,
+            description: formState.description,
+          }
+        : m
     );
 
     await updateExistingLead(leadId, { ...lead, meetings: updatedMeetings });
@@ -50,6 +87,8 @@ export default function EditMeetingForm({
       onClose?.();
     }, 500);
   };
+
+  if (!formState) return null;
 
   return (
     <FormWrapper
@@ -64,8 +103,13 @@ export default function EditMeetingForm({
         <Input
           type="date"
           id="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
+          value={formState.date}
+          onChange={(e) =>
+            setFormState({
+              ...formState,
+              date: e.target.value,
+            })
+          }
           className="h-10 rounded-md"
           required
         />
@@ -75,8 +119,13 @@ export default function EditMeetingForm({
         <Input
           type="time"
           id="time"
-          value={time}
-          onChange={(e) => setTime(e.target.value)}
+          value={formState.time}
+          onChange={(e) =>
+            setFormState({
+              ...formState,
+              time: e.target.value,
+            })
+          }
           className="h-10 rounded-md"
           required
         />
@@ -85,8 +134,13 @@ export default function EditMeetingForm({
       <FormField label="Description" htmlFor="description">
         <Textarea
           id="description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          value={formState.description}
+          onChange={(e) =>
+            setFormState({
+              ...formState,
+              description: e.target.value,
+            })
+          }
           className="min-h-[100px] rounded-md resize-none"
           placeholder="Meeting details..."
           required

@@ -72,7 +72,12 @@ export default function MessagesList({
       </div>
 
       <Modal isOpen={isOpen} onClose={close}>
-        <AddMessageForm onClose={close} />
+        <AddMessageForm
+          initialEmail={""}
+          initialSubject={""}
+          initialContent={""}
+          onClose={close}
+        />
       </Modal>
     </>
   );

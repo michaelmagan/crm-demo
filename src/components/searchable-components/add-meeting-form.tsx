@@ -1,7 +1,7 @@
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useLeadStore } from "@/store/lead-store";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Select,
   SelectContent,
@@ -10,69 +10,129 @@ import {
   SelectValue,
 } from "../ui/select";
 import { FormWrapper, FormField } from "@/components/ui/form-wrapper";
+import { MeetingFormProps } from "@/schemas/meeting";
+import {
+  useTamboComponentState,
+  useTamboStreamingProps,
+} from "@tambo-ai/react";
+import { z } from "zod";
 
-interface AddMeetingFormProps {
-  initialDateTimeISO?: string;
-  initialDescription?: string;
-  initialLeadId?: string;
-  onClose?: () => void;
+// 1. Define schema for Tambo registration
+export const MeetingSchema = z.object({
+  initialDateTimeISO: z.string().optional().default(""),
+  initialDescription: z.string().optional().default(""),
+  initialLeadId: z.string().optional().default(""),
+});
+
+// 2. Define component props derived from schema
+export type Meeting = z.infer<typeof MeetingSchema>;
+export type AddMeetingFormProps = Meeting & { onClose?: () => void };
+
+interface FormState {
+  selectedLeadId: string;
+  date: string;
+  time: string;
+  dateTime: string;
+  description: string;
 }
 
 export default function AddMeetingForm({
-  initialDateTimeISO: initialDateTime = "",
+  initialDateTimeISO = "",
   initialDescription = "",
   initialLeadId = "",
   onClose,
 }: AddMeetingFormProps) {
   const { leads, addNewMeeting } = useLeadStore();
-  const [selectedLeadId, setSelectedLeadId] = useState<string>(initialLeadId);
-  const [dateTime, setDateTime] = useState(initialDateTime);
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-  const [description, setDescription] = useState(initialDescription);
+
+  const [formState, setFormState] = useTamboComponentState<FormState>(
+    "addMeetingForm",
+    {
+      selectedLeadId: "",
+      dateTime: "",
+      date: "",
+      time: "",
+      description: "",
+    }
+  );
+
   const [submitState, setSubmitState] = useState<
     "idle" | "loading" | "success"
   >("idle");
 
-  useEffect(() => {
-    if (initialDateTime) {
-      const dateObj = new Date(initialDateTime);
-      setDate(dateObj.toISOString().split("T")[0]);
-      setTime(dateObj.toTimeString().slice(0, 5));
+  // Process initialDateTimeISO for display
+  let initialDate = "";
+  let initialTime = "";
+
+  if (initialDateTimeISO) {
+    const dateObj = new Date(initialDateTimeISO);
+    if (!isNaN(dateObj.getTime())) {
+      initialDate = dateObj.toISOString().split("T")[0];
+      initialTime = dateObj.toTimeString().slice(0, 5);
     }
-  }, [initialDateTime]);
+  }
+
+  // 3. Connect streaming props to form state
+  useTamboStreamingProps(formState, setFormState, {
+    selectedLeadId: initialLeadId,
+    dateTime: initialDateTimeISO,
+    date: initialDate,
+    time: initialTime,
+    description: initialDescription,
+  });
 
   const handleDateTimeChange = (newDate: string, newTime: string) => {
+    if (!formState) return;
+
     if (newDate && newTime) {
       const isoString = `${newDate}T${newTime}:00`;
-      setDateTime(isoString);
+      setFormState({
+        ...formState,
+        dateTime: isoString,
+        date: newDate,
+        time: newTime,
+      });
     } else {
-      setDateTime("");
+      setFormState({
+        ...formState,
+        dateTime: "",
+        date: newDate,
+        time: newTime,
+      });
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (dateTime && description && selectedLeadId) {
+    if (!formState) return;
+
+    if (
+      formState.dateTime &&
+      formState.description &&
+      formState.selectedLeadId
+    ) {
       setSubmitState("loading");
 
       try {
-        const [date, time] = dateTime.split("T");
-        await addNewMeeting(parseInt(selectedLeadId), {
-          leadId: parseInt(selectedLeadId),
+        const [date, time] = formState.dateTime.split("T");
+        await addNewMeeting(parseInt(formState.selectedLeadId), {
+          leadId: parseInt(formState.selectedLeadId),
           date,
           time: time.slice(0, 5),
-          description,
+          description: formState.description,
         });
 
         setSubmitState("success");
         setTimeout(() => {
           setSubmitState("idle");
-          setDateTime("");
-          setDate("");
-          setTime("");
-          setDescription("");
-          setSelectedLeadId("");
+          if (formState) {
+            setFormState({
+              selectedLeadId: "",
+              dateTime: "",
+              date: "",
+              time: "",
+              description: "",
+            });
+          }
           onClose?.();
         }, 500);
       } catch (error) {
@@ -81,6 +141,8 @@ export default function AddMeetingForm({
       }
     }
   };
+
+  if (!formState) return null;
 
   return (
     <FormWrapper
@@ -92,7 +154,15 @@ export default function AddMeetingForm({
       successLabel="Scheduled!"
     >
       <FormField label="Lead" htmlFor="lead">
-        <Select value={selectedLeadId} onValueChange={setSelectedLeadId}>
+        <Select
+          value={formState.selectedLeadId}
+          onValueChange={(value) =>
+            setFormState({
+              ...formState,
+              selectedLeadId: value,
+            })
+          }
+        >
           <SelectTrigger className="h-10 rounded-md">
             <SelectValue placeholder="Select a lead" />
           </SelectTrigger>
@@ -110,10 +180,9 @@ export default function AddMeetingForm({
         <Input
           type="date"
           id="date"
-          value={date}
+          value={formState.date}
           onChange={(e) => {
-            setDate(e.target.value);
-            handleDateTimeChange(e.target.value, time);
+            handleDateTimeChange(e.target.value, formState.time);
           }}
           className="h-10 rounded-md"
           required
@@ -124,10 +193,9 @@ export default function AddMeetingForm({
         <Input
           type="time"
           id="time"
-          value={time}
+          value={formState.time}
           onChange={(e) => {
-            setTime(e.target.value);
-            handleDateTimeChange(date, e.target.value);
+            handleDateTimeChange(formState.date, e.target.value);
           }}
           className="h-10 rounded-md"
           required
@@ -137,8 +205,13 @@ export default function AddMeetingForm({
       <FormField label="Description" htmlFor="description">
         <Textarea
           id="description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          value={formState.description}
+          onChange={(e) =>
+            setFormState({
+              ...formState,
+              description: e.target.value,
+            })
+          }
           className="min-h-[100px] rounded-md resize-none"
           placeholder="Meeting details..."
           required

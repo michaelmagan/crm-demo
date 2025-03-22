@@ -7,23 +7,27 @@ import { zodToJsonSchema } from "zod-to-json-schema";
  * under the specified property name, rather than as individual fields.
  *
  * @param schema The Zod schema to convert
- * @param propName The property name to use for the wrapper (e.g., "lead")
+ * @param assignedPropName The property name to use for the wrapper (e.g., "lead")
  * @returns A JSON schema that wraps the original schema
  */
 export function wrapZodSchema<T extends z.ZodTypeAny>(
   schema: T,
-  propName: string
+  assignedPropName?: string
 ): Record<string, unknown> {
   const convertedSchema = zodToJsonSchema(schema);
 
+  if (!assignedPropName) {
+    return convertedSchema;
+  }
+
   return {
-    title: `${propName} Object Input`,
-    description: `This schema expects a complete object to be passed as the '${propName}' property.`,
+    title: `${assignedPropName} Object Input`,
+    description: `This schema expects a complete object to be passed as the '${assignedPropName}' property.`,
     type: "object",
     properties: {
-      [propName]: convertedSchema,
+      [assignedPropName]: convertedSchema,
     },
-    required: [propName],
+    required: [assignedPropName],
   };
 }
 

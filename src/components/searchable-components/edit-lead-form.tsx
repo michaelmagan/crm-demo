@@ -7,44 +7,79 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Lead, LeadStatus } from "@/services/leads-service";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useLeadStore } from "../../store/lead-store";
 import { FormWrapper, FormField } from "@/components/ui/form-wrapper";
+import {
+  useTamboComponentState,
+  useTamboStreamingProps,
+} from "@tambo-ai/react";
+import { z } from "zod";
 
-interface EditLeadFormProps {
+// 1. Define schema for Tambo registration
+export const EditLeadSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  email: z.string().email(),
+  company: z.string(),
+  phone: z.string(),
+  status: z.enum(["New", "Contacted", "Qualified", "Closed"]),
+  notes: z.array(z.any()),
+  meetings: z.array(z.any()),
+});
+
+// 2. Define component props derived from schema
+export type EditLeadProps = {
   lead: Lead;
   onClose?: () => void;
+};
+
+interface FormState {
+  name: string;
+  email: string;
+  company: string;
+  phone: string;
+  status: LeadStatus;
 }
 
-export default function EditLeadForm({ lead, onClose }: EditLeadFormProps) {
-  const [name, setName] = useState(lead.name);
-  const [email, setEmail] = useState(lead.email);
-  const [company, setCompany] = useState(lead.company);
-  const [phone, setPhone] = useState(lead.phone);
-  const [status, setStatus] = useState<LeadStatus>(lead.status);
+export default function EditLeadForm({ lead, onClose }: EditLeadProps) {
+  const [formState, setFormState] = useTamboComponentState<FormState>(
+    "editLeadForm",
+    {
+      name: "",
+      email: "",
+      company: "",
+      phone: "",
+      status: "New" as LeadStatus,
+    }
+  );
+
   const [submitState, setSubmitState] = useState<
     "idle" | "loading" | "success"
   >("idle");
 
-  useEffect(() => {
-    setName(lead.name);
-    setEmail(lead.email);
-    setCompany(lead.company);
-    setPhone(lead.phone);
-    setStatus(lead.status);
-  }, [lead]);
+  // 3. Connect streaming lead prop to form state
+  useTamboStreamingProps(formState, setFormState, {
+    name: lead.name,
+    email: lead.email,
+    company: lead.company,
+    phone: lead.phone,
+    status: lead.status,
+  });
 
   const { updateExistingLead } = useLeadStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formState) return;
+
     setSubmitState("loading");
     await updateExistingLead(lead.id, {
-      name,
-      email,
-      company,
-      phone,
-      status,
+      name: formState.name,
+      email: formState.email,
+      company: formState.company,
+      phone: formState.phone,
+      status: formState.status,
       notes: lead.notes,
       meetings: lead.meetings,
     });
@@ -71,6 +106,8 @@ export default function EditLeadForm({ lead, onClose }: EditLeadFormProps) {
     }
   };
 
+  if (!formState) return null;
+
   return (
     <FormWrapper
       title="Edit lead"
@@ -84,8 +121,13 @@ export default function EditLeadForm({ lead, onClose }: EditLeadFormProps) {
       <FormField label="Name" htmlFor="name">
         <Input
           id="name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+          value={formState.name}
+          onChange={(e) =>
+            setFormState({
+              ...formState,
+              name: e.target.value,
+            })
+          }
           className="h-10 rounded-md"
           required
         />
@@ -95,8 +137,13 @@ export default function EditLeadForm({ lead, onClose }: EditLeadFormProps) {
         <Input
           type="email"
           id="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          value={formState.email}
+          onChange={(e) =>
+            setFormState({
+              ...formState,
+              email: e.target.value,
+            })
+          }
           className="h-10 rounded-md"
           required
         />
@@ -105,8 +152,13 @@ export default function EditLeadForm({ lead, onClose }: EditLeadFormProps) {
       <FormField label="Company" htmlFor="company">
         <Input
           id="company"
-          value={company}
-          onChange={(e) => setCompany(e.target.value)}
+          value={formState.company}
+          onChange={(e) =>
+            setFormState({
+              ...formState,
+              company: e.target.value,
+            })
+          }
           className="h-10 rounded-md"
         />
       </FormField>
@@ -115,28 +167,38 @@ export default function EditLeadForm({ lead, onClose }: EditLeadFormProps) {
         <Input
           type="tel"
           id="phone"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
+          value={formState.phone}
+          onChange={(e) =>
+            setFormState({
+              ...formState,
+              phone: e.target.value,
+            })
+          }
           className="h-10 rounded-md"
         />
       </FormField>
 
       <FormField label="Status" htmlFor="status">
         <Select
-          value={status}
-          onValueChange={(value) => setStatus(value as LeadStatus)}
+          value={formState.status}
+          onValueChange={(value) =>
+            setFormState({
+              ...formState,
+              status: value as LeadStatus,
+            })
+          }
         >
           <SelectTrigger className="h-10 rounded-md">
             <SelectValue placeholder="Select a status">
               <span
                 style={{
-                  backgroundColor: getStatusColor(status),
+                  backgroundColor: getStatusColor(formState.status),
                   padding: "2px 8px",
                   borderRadius: "4px",
                   display: "inline-block",
                 }}
               >
-                {status}
+                {formState.status}
               </span>
             </SelectValue>
           </SelectTrigger>
